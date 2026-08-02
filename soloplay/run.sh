@@ -1,35 +1,20 @@
-name: "SoloPlay Server"
-description: "SoloPlay server-applikation med PostgreSQL support, Tilgå website via http://<ha-IP>:6968 eller en anden port hvis du har ændret det i config"
-version: "1.0.0"
-slug: "soloplay"
-init: false
+#!/bin/bash
+set -e
 
-# Sidepanel og Ingress konfiguration
-ingress: false
-ingress_port: 6968
-panel_title: "SoloPlay"
-panel_icon: "mdi:controller"
+CONFIG_PATH=/data/options.json
 
-arch:
-  - amd64
-  - aarch64
-ports:
-  6968/tcp: 6968
-ports_description:
-  6968/tcp: "SoloPlay Web interface"
-options:
-  app_token: "Skift_Dette_Token_Til_Noget_Langt_Over_50_Tegn"
-  enable_migration: true
-  db_host: "core-postgressql" # eller IP på din Postgres server
-  db_port: 5432
-  db_name: "Soloplay"
-  db_user: "app"
-  db_password: "postgres-dev-password"
-schema:
-  app_token: str
-  enable_migration: bool
-  db_host: str
-  db_port: int
-  db_name: str
-  db_user: str
-  db_password: str
+APP_TOKEN=$(jq --raw-output '.app_token' $CONFIG_PATH)
+ENABLE_MIGRATION=$(jq --raw-output '.enable_migration' $CONFIG_PATH)
+DB_HOST=$(jq --raw-output '.db_host' $CONFIG_PATH)
+DB_PORT=$(jq --raw-output '.db_port' $CONFIG_PATH)
+DB_NAME=$(jq --raw-output '.db_name' $CONFIG_PATH)
+DB_USER=$(jq --raw-output '.db_user' $CONFIG_PATH)
+DB_PASSWORD=$(jq --raw-output '.db_password' $CONFIG_PATH)
+
+export AppSettings__Token="$APP_TOKEN"
+export AppSettings__IsMigrationEnabled="$ENABLE_MIGRATION"
+export ConnectionStrings__DefaultConnection="Host=$DB_HOST;Port=$DB_PORT;Database=$DB_NAME;Username=$DB_USER;Password=$DB_PASSWORD"
+export ASPNETCORE_ENVIRONMENT="Production"
+
+echo "Starter SoloPlay Server..."
+exec dotnet SoloPlay.Server.dll --urls http://0.0.0.0:6968
